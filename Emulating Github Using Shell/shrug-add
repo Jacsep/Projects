@@ -1,0 +1,39 @@
+#!/bin/dash
+
+# Save the path for current directory.
+current=$(pwd)
+
+# Check if the .shrug repository already exists.
+if [ ! -d ".shrug" ]
+then
+    echo "shrug-add: error: no .shrug directory containing shrug repository exists"
+elif [ $# -eq 0 ]
+then
+    echo "usage: shrug-add <filenames>"
+else
+    # Go through every filename given as a command line argument.
+    for filename in "$@"
+    do
+        # Check if the file exists in the current directory.
+        if [ ! -f "${current}/${filename}" ]
+        then
+            # If the file doesn't exist in current directory but is in the index, shrug-add will remove it.
+            if [ -f "${current}/.shrug/index/${filename}" ]
+            then
+                rm "${current}/.shrug/index/${filename}"
+            else
+            # File doesn't exist at all
+                echo "shrug-add: error: can not open '$filename'"
+                exit
+            fi
+        else
+            # Make index directory if it doesn't exist.
+            if [ ! -d "${current}/.shrug/index" ]
+            then
+                mkdir "${current}/.shrug/index"
+            fi
+            # Copy file from working directory to index.
+            cp "${current}/${filename}" "${current}/.shrug/index"
+        fi
+    done
+fi

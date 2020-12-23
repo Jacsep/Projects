@@ -1,0 +1,96 @@
+#!/bin/dash
+
+# Check that there are at least 2 common line arguments.
+if test $# -lt 2
+then
+    echo "usage: shrug-commit [-a] -m commit-message"
+    exit
+# Check that the -m operand has been included.
+elif [ $1 != "-m" ] && [ $2 != "-m" ]
+then
+    echo "usage: shrug-commit [-a] -m commit-message"
+    exit
+fi
+
+current=$(pwd)
+
+# Check for the -a operand.
+if test $1 = "-a"
+then
+    for indexname in *
+    do
+        # Check if the file in current directory is also in index.
+        # If it is, replace it.
+        if [ -f "${current}/.shrug/index/${indexname}" ]
+        then
+            cp "$indexname" "${current}/.shrug/index/${indexname}"
+        fi
+    done
+fi
+
+cd ".shrug"
+
+# Make repository if it does not exist.
+if [ ! -d "repository" ]
+then
+    mkdir "repository"
+fi
+
+# Make a log text file if it does not exist.
+# This keeps track of the commits and messages.
+if [ ! -f "log.txt" ]
+then 
+    touch "log.txt"
+    commitnum=0
+else
+    # Find out which number commit we are up to.
+    number=$(cut -d" " -f1 "log.txt" | head -1)
+    commitnum=$((number + 1))
+fi
+
+pwd=$(pwd)
+
+# Make a directory called oldindex.
+# We will compare this to the index directory everytime commit is called.
+if [ ! -d "${pwd}/oldindex" ]
+then
+    mkdir "${pwd}/oldindex"
+fi
+
+
+if [ -d "${pwd}/oldindex" ]
+then 
+    # If oldindex and index are the same, that means there has been no change to the index directory.
+    # Therefore, nothing has changed.
+    if diff "${pwd}/oldindex" "${pwd}/index" > /dev/null
+    then
+        echo "nothing to commit"
+        exit
+    fi
+fi
+
+repository="$(pwd)/repository"
+cd "index"
+# Make a text file to store which files are committed at each call of "shrug-commit".
+# This is mainly for shrug-status
+echo -n "" > "${current}/.shrug/repofiles.txt"
+
+for filename in *
+do 
+    if [ -f $filename ]
+    then
+        # Copy to file to repositor.
+        # Add a prefix that indicates the number commit.
+        cp $filename "${commitnum}${filename}"
+        cp "${commitnum}${filename}" $repository
+        rm "${commitnum}${filename}"
+        echo $filename>>"${current}/.shrug/repofiles.txt"
+    fi
+done
+echo "Committed as commit $commitnum"
+cd "$pwd"
+# Add the commit and message to the end of the top of the log text file.
+echo "$commitnum $2" | cat - "log.txt" > temp && mv temp "log.txt"
+# Update oldindex
+rm -r "${pwd}/oldindex"
+cp -r "${pwd}/index" "${pwd}/oldindex"

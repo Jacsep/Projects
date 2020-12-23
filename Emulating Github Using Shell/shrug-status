@@ -1,0 +1,87 @@
+#!/bin/dash
+
+echo -n "">"$(pwd)/.shrug/status.txt"
+number=$(cut -d" " -f1 "$(pwd)/.shrug/log.txt" | head -1)
+
+# First we will do files in working directory
+for filename in *
+do
+    # if filename = *, that means there were no matching files.
+    if test $filename = "*"
+    then
+        :
+    elif [ ! -d $filename ]
+    then
+        # If we have a file in working directory that isn't in either repo or index,
+        # then this is considered untracked.
+        if [ ! -f "$(pwd)/.shrug/index/${filename}" ]
+        then
+            echo "$filename - untracked">>"$(pwd)/.shrug/status.txt"
+        # Same file in working directory and index.
+        elif cmp -s "$filename" "$(pwd)/.shrug/index/${filename}"
+        then
+            # File doesn't exist in repo
+            if [ ! -f "$(pwd)/.shrug/repository/${number}${filename}" ]
+            then
+                echo "$filename - added to index">>"$(pwd)/.shrug/status.txt"
+            # Repo and index different
+            elif ! cmp -s "$(pwd)/.shrug/repository/${number}${filename}" "$(pwd)/.shrug/index/${filename}"
+            then
+                echo "$filename - file changed, changes staged for commit">>"$(pwd)/.shrug/status.txt"
+            # Working directory same as repo
+            elif cmp -s "$filename" "$(pwd)/.shrug/repository/${number}${filename}"
+            then
+                echo "$filename - same as repo">>"$(pwd)/.shrug/status.txt"
+            fi 
+        # Index and working directory file is different.
+        elif ! cmp -s "$filename" "$(pwd)/.shrug/index/${filename}"
+        then
+            # File doesn't exist in repository.
+            if [ ! -f "$(pwd)/.shrug/repository/${number}${filename}" ]
+            then
+                echo "$filename - added to index, file changed">>"$(pwd)/.shrug/status.txt"
+            # Repo and index files are the same.
+            elif cmp -s "$(pwd)/.shrug/repository/${number}${filename}" "$(pwd)/.shrug/index/${filename}"
+            then
+                echo "$filename - file changed, changes not staged for commit">>"$(pwd)/.shrug/status.txt"
+            # Repo and index files are different.
+            else
+                echo "$filename - file changed, different changes staged for commit">>"$(pwd)/.shrug/status.txt"
+            fi
+        fi
+    fi
+done
+
+# Check for files that might be in repo but not in working directory.
+while read line
+do
+    # Check if it exists in working directory.
+    if [ ! -f "$(pwd)/$line" ]
+    then
+        # Check if it exists in the index.
+        if [ ! -f $(pwd)/.shrug/index/$line ]
+        then
+            echo "$line - deleted">>"$(pwd)/.shrug/status.txt"
+        else 
+            echo "$line - file deleted">>"$(pwd)/.shrug/status.txt"
+        fi
+    fi
+# Get all committed filenames stored in this file.
+done < "$(pwd)/.shrug/repofiles.txt"
+current=$(pwd)
+
+cd "$(pwd)/.shrug/index"
+# Find files that are only in index.
+for file in *
+do
+    if test $file = "*"
+    then
+        :
+    # CHeck whether the file already has a status given to it.
+    elif ! grep -q "$file -"  "${current}/.shrug/status.txt"
+    then
+        echo "$file - added to index, file deleted">>"${current}/.shrug/status.txt"
+    fi
+done
+# Print the file sorted alphabetically.
+cat "${current}/.shrug/status.txt" | sort

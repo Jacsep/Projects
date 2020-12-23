@@ -1,0 +1,158 @@
+#!/bin/dash
+
+# Check the number of command line arguments, must have at least 1.
+if test $# -eq 0
+then
+    echo "usage: shrug-rm [--force] [--cached] <filenames>"
+    exit
+fi
+
+current=$(pwd)
+dashes="--"
+# Find the lastest commit number.
+number=$(cut -d" " -f1 "${current}/.shrug/log.txt" | head -1)
+
+# Check for valid special operators.
+if test "${1#*$dashes}" != "$1"
+then
+    if [ $1 != "--force" ] && [ $1 != "--cached" ]
+    then
+        echo "usage: shrug-rm [--force] [--cached] <filenames>"
+        exit
+    elif [ $1 = "--force" ] && [ "${2#*$dashes}" != "$2" ]
+    then
+        if [ $2 != "--cached" ]
+        then 
+            echo "usage: shrug-rm [--force] [--cached] <filenames>"
+            exit
+        fi
+    fi
+fi
+
+
+# Do --force and both case
+if test $1 = "--force"
+then
+    if test $2 = "--cached"
+    then
+        for filename in "$@"
+        do
+            # Remove file from index.
+            if [ -f "${current}/.shrug/index/${filename}" ]
+            then
+                rm "${current}/.shrug/index/${filename}"
+            fi
+        done
+    else
+        for filename in "$@"
+        do
+            # Remove file from both index and working directory.
+            if [ -f "${current}/.shrug/index/${filename}" ]
+            then
+                rm "${current}/.shrug/index/${filename}"
+            # Make sure it isn't the operand by testing to see if it has "--"
+            elif test ! "${filename#*$dashes}" != "$filename" 
+            then
+                echo "shrug-rm: error: '$filename' is not in the shrug repository"
+                exit 
+            fi
+            if [ -f "${current}/${filename}" ]
+            then
+                rm "${current}/${filename}"
+            fi
+        done
+    fi 
+elif test $1 = "--cached"
+then
+    for file in "$@"
+    do
+        # Make sure it isn't the operand by testing to see if it has "--"
+        if test ! "${file#*$dashes}" != "$file" 
+        then
+            # File in index different to repo.
+            # shrug-rm: error: 'new.txt' has changes staged in the index
+            if [ ! -f "${current}/.shrug/repository/${number}${file}" ]
+            then 
+                if [ ! -f "${current}/.shrug/index/${file}" ]
+                then
+                    echo "shrug-rm: error: '$file' is not in the shrug repository"
+                    exit 
+                fi
+            # Compare index and repository files.
+            elif ! cmp -s "${current}/.shrug/index/${file}" "${current}/.shrug/repository/${number}${file}"
+            then
+                # Compare working directory and index files.
+                if ! cmp -s "${current}/${file}" "${current}/.shrug/index/${file}"
+                then
+                    echo "shrug-rm: error: '$file' in index is different to both working file and repository"
+                    exit
+                fi  
+            fi
+        fi
+    done
+    for filename in "$@"
+    do
+        if [ -f "${current}/.shrug/index/${filename}" ]
+        then
+            rm "${current}/.shrug/index/${filename}"
+        fi
+    done
+else
+    # No operands
+    # Error checking
+    # File never committed to repository
+    for file in "$@"
+    do
+        if ! test "${file#*$dashes}" != "$file" 
+        then
+            # Check whether repository files exists.
+            if [ ! -f "${current}/.shrug/repository/${number}${file}" ]
+            then
+                # Check if the file exists in the index.
+                if [ -f "${current}/.shrug/index/${file}" ]
+                then
+                    echo "shrug-rm: error: '$file' has changes staged in the index"
+                    exit  
+                else
+                    echo "shrug-rm: error: '$file' is not in the shrug repository"
+                    exit   
+                fi 
+            fi
+        fi
+    done
+    for filename in "$@"
+    do
+        # File in index different to repo.
+        if ! cmp -s "${current}/.shrug/index/${filename}" "${current}/.shrug/repository/${number}${filename}"
+        then
+            # Compare working directory and index files
+            if cmp -s "${current}/${filename}" "${current}/.shrug/index/${filename}"
+            then
+                echo "shrug-rm: error: '$filename' has changes staged in the index"
+                exit
+            else
+                echo "shrug-rm: error: '$filename' in index is different to both working file and repository"
+                exit
+            fi  
+        fi
+
+        # File in working directory different to repo
+        if ! cmp -s "${current}/${filename}" "${current}/.shrug/repository/${number}${filename}"
+        then
+            echo "shrug-rm: error: '$filename' in repository is different to working file"
+            exit
+        fi
+    done
+    # If it doesn't give an error in previous part, remove file from index and working directory.
+    for filename in "$@"
+    do
+        if [ -f "${current}/.shrug/index/${filename}" ]
+        then
+            rm "${current}/.shrug/index/${filename}"
+        fi
+        if [ -f "${current}/${filename}" ]
+        then
+            rm "${current}/${filename}"
+        fi
+    done
+fi

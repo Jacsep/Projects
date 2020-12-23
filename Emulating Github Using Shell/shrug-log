@@ -1,0 +1,5 @@
+#!/bin/dash
+
+# Print the log.txt file
+cd ".shrug"
+cat "log.txt" 

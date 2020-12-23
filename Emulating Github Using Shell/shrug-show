@@ -1,0 +1,47 @@
+#!/bin/dash
+
+if [ ! -d ".shrug" ]
+then
+    echo "shrug-show: error: no .shrug directory containing shrug repository exists"
+    exit
+fi
+
+if test $# -lt 1
+then
+    echo "usage: shrug-show <commit>:<filename>"
+    exit
+fi
+
+current=$(pwd)
+
+# Get the number commit desired as well as the filename.
+number=$(echo $1 | cut -d":" -f1)
+filename=$(echo $1 | cut -d":" -f2)
+
+# Scenario where number is left blank.
+# Print the file in index.
+if test -z "$number"
+then
+    if test -f "${current}/.shrug/index/${filename}"
+    then
+        cat "${current}/.shrug/index/${filename}"
+    else 
+        echo "shrug-show: error: '${filename}' not found in index"
+    fi
+else
+    # Find the number of the lastest commit.
+    commit=$(cut -d" " -f1 "${current}/.shrug/log.txt" | head -1)
+    # Make sure that the desired number is not greater than the latest commit
+    if test $commit -lt $number
+    then 
+        echo "shrug-show: error: unknown commit '$number'"
+        exit
+    fi
+    # Print the desired file.
+    if test -f "${current}/.shrug/repository/${number}${filename}"
+    then
+        cat "${current}/.shrug/repository/${number}${filename}"
+    else
+        echo "shrug-show: error: '${filename}' not found in commit "$number""
+    fi
+fi
