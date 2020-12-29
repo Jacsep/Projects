@@ -1,0 +1,40 @@
+User1 tries to login without without registering.
+User1 attempts to register without a valid email/password/name
+User1 tries to login but uses the incorrect password.
+User1 logins successfully.
+User1 tries to join a channel but none exist.
+User1 tries to create a public channel with an invalid name.
+User1 creates a valid public and private channel.
+User1 tries to join the same channel but is already a part of it.
+User1 calls channel_listall.
+User1 logouts successfully.
+User1 tries to logout again.
+User2 registers and logins.
+User2 checks their profile.
+User2 checks user1's profile.
+User2 checks all profiles.
+User2 creates a public and private channel.
+User2 lists all channels user2 is part of.
+User2 lists all channels user1 is part of.
+User2 lists all channels.
+User2 tries to print the details of user1's channel.
+User2 prints the details of both their channels.
+User2 invites user1 to their public channel.
+User2 checks all the channels that user1 is part of.
+User2 tries to join user1's private channel.
+User2 joins user1's public channel.
+User2 tries to remove user1 as an owner of user1's public channel.
+User2 tries to add user1 as an owner of user1's public channel.
+User2 adds user1 as an owner in their own channel.
+User2 prints the messages of user1's public channel.
+User2 sends the same message in user1's and user2's public channels.
+Search for this message.
+User2 edits the message in user1's public channel.
+Search for this message.
+User2 removes the message from user2's public channel.
+Search for this message.
+User2 tries to send message to user1's private channel.
+User2 removes themselves as an owner in their own channel.
+User2 leaves their own channel.
+User2 edits their email, name and handle.
+User2 prints their profile.
